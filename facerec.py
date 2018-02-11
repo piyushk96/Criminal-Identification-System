@@ -1,0 +1,89 @@
+# facerec.py
+import cv2, numpy, os
+
+size = 1
+haar_cascade = cv2.CascadeClassifier('face_cascade.xml')
+
+# Part 1: Create fisherRecognizer
+def train_model():
+    model = cv2.face.FisherFaceRecognizer_create()
+    fn_dir = 'face_samples'
+
+    print('Training...')
+
+    (images, lables, names, id) = ([], [], {}, 0)
+
+    for (subdirs, dirs, files) in os.walk(fn_dir):
+        # Loop through each folder named after the subject in the photos
+        for subdir in dirs:
+            names[id] = subdir
+            subjectpath = os.path.join(fn_dir, subdir)
+            # Loop through each photo in the folder
+            for filename in os.listdir(subjectpath):
+                # Skip non-image formates
+                f_name, f_extension = os.path.splitext(filename)
+                if(f_extension.lower() not in ['.png','.jpg','.jpeg','.gif','.pgm']):
+                    print("Skipping "+filename+", wrong file type")
+                    continue
+                path = subjectpath + '/' + filename
+                lable = id
+                
+                # Add to training data
+                images.append(cv2.imread(path, 0))
+                lables.append(int(lable))
+            id += 1
+
+    # Create a Numpy array from the two lists above
+    (images, lables) = [numpy.array(lis) for lis in [images, lables]]
+    # OpenCV trains a model from the images
+    model.train(images, lables)
+
+    return (model, names)
+
+
+# Part 2: Use fisherRecognizer on camera stream
+def detect_faces(gray_frame):
+    global size, haar_cascade
+
+    # Flip the image (optional)
+    gray_frame = cv2.flip(gray_frame, 1, 0)
+
+    # Resize to speed up detection (optinal, change size above)
+    mini = cv2.resize(gray_frame, (int(gray_frame.shape[1] / size), int(gray_frame.shape[0] / size)))
+
+    # Detect faces and loop through each one
+    faces = haar_cascade.detectMultiScale(mini)
+    return faces
+
+
+def recognize_face(model, frame, gray_frame, face_coords, names):
+    (img_width, img_height) = (112, 92)
+
+    for i in range(len(face_coords)):
+        face_i = face_coords[i]
+
+        # Coordinates of face after scaling back by `size`
+        (x, y, w, h) = [v * size for v in face_i]
+        face = gray_frame[y:y + h, x:x + w]
+        face_resize = cv2.resize(face, (img_width, img_height))
+
+        # Try to recognize the face
+        (prediction, confidence) = model.predict(face_resize)
+
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0,0,255), 3)
+
+        # Write the name of recognized face    print(prediction, confidence)
+        if confidence > 500:
+            cv2.putText(frame,'Unknown',
+                    (x - 10, y - 10), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
+        else:
+            cv2.putText(frame,
+                    '%s - %d' % (names[prediction], confidence),
+                    (x - 10, y - 10), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
+
+
+    # # Show the image and check for ESC being pressed
+    # cv2.imshow('OpenCV', frame)
+    # key = cv2.waitKey(10)
+    # if key == 27:
+    #     return False
