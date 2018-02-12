@@ -1,10 +1,13 @@
 from tkinter import *
 from PIL import Image
 from PIL import ImageTk
+import threading
 from facerec import *
 
 active_page = 0
-video_loop = False
+thread_event = None
+video_frame = None
+webcam = None
 
 root = Tk()
 root.configure(background = '#202d42')
@@ -19,14 +22,16 @@ for i in range(4):
 back_button = PhotoImage(file="previous.png")
 
 def goBack():
-    global video_loop, active_page
+    global active_page, thread_event, webcam
 
-    print(pages[active_page].winfo_children())
+    if (not thread_event.is_set()):
+        thread_event.set()
+        webcam.release()
+
     for widget in pages[active_page].winfo_children():
         widget.destroy()
 
     pages[0].lift()
-    video_loop = False
     active_page = 0
 
 ## Register Page ##
@@ -49,9 +54,48 @@ def getPage2():
     Label(pages[2], text="Detect Criminal", fg="white", bg="#202d42",
       font="Arial 20 bold", pady=10).pack()
 
+
+def videoLoop():
+    global thread_event, video_frame, webcam
+    video = None
+    webcam = cv2.VideoCapture(0)
+    try:
+        while not thread_event.is_set():
+            # Loop until the camera is working
+            while (True):
+                # Put the image from the webcam into 'frame'
+                (return_val, frame) = webcam.read()
+                if (return_val == True):
+                    break
+                else:
+                    print("Failed to open webcam. Trying again...")
+
+            # Convert frame to grayscale
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            face_coords = detect_faces(gray_frame)
+
+            ###########recognize        OpenCV=BGR  PIL=RGB
+            img = cv2.resize(frame, (600, 600))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(img)
+            img = ImageTk.PhotoImage(img)
+            if(not thread_event.is_set()):
+                if(video == None):
+                    video = Label(video_frame, image=img)
+                    video.image = img
+                    video.pack(fill="both", expand=1)
+                else:
+                    video.configure(image = img)
+                    video.image = img
+
+    except RuntimeError:
+        print("[INFO]Caught Runtime Error")
+
+
 ## video surveillance Page ##
 def getPage3():
-    global active_page, video_loop
+    global active_page, video_loop, video_frame, thread_event
     active_page = 3
     pages[3].lift()
 
@@ -61,9 +105,9 @@ def getPage3():
           font="Arial 20 bold", pady=10).pack()
 
     content = Frame(pages[3], bg="pink", pady=100)
-    content.pack(expand="true", fill="y")
+    content.pack(expand="true", fill="both")
 
-    video_frame = Frame(content, bg="red", width=600, height=600, padx=50)
+    video_frame = Frame(content, bg="pink", width=600, height=600, padx=100)
     video_frame.grid(row=0, column=0, sticky="NW")
 
     output = Frame(content, bg="yellow", width=600, height=600, padx=50)
@@ -72,35 +116,11 @@ def getPage3():
     (model, names) = train_model()
     print('Training Successful. Detecting Faces')
 
-    video_loop = True
-    webcam = cv2.VideoCapture(0)
-
-    while video_loop == True:
-        # Loop until the camera is working
-        while (True):
-            # Put the image from the webcam into 'frame'
-            (return_val, frame) = webcam.read()
-            if (return_val == True):
-                break
-            else:
-                print("Failed to open webcam. Trying again...")
-
-        # Convert frame to grayscale
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        face_coords = detect_faces(gray_frame)
+    thread_event = threading.Event()
+    thread = threading.Thread(target=videoLoop, args=())
+    thread.start()
 
 
-        ###########recognize        OpenCV=BGR  PIL=RGB
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = ImageTk.PhotoImage(img)
-        vid = Label(video_frame, image=img)
-        vid.image = img
-        vid.pack(fill="both", expand=1)
-
-
-    webcam.release()
 
 
 ######################################## Home Page ####################################
@@ -125,6 +145,16 @@ for btn in btn_frame.winfo_children():
 
 
 
+# def onClose():
+#     global thread_event, webcam
+#     print("[INFO] closing window...")
+#     if(thread_event != None and not thread_event.is_set()):
+#         thread_event.set()
+#         webcam.release()
+#
+#     root.quit()
+
 
 pages[0].lift()
+# root.wm_protocol("WM_DELETE_WINDOW", onClose)
 root.mainloop()
