@@ -6,7 +6,8 @@ from facerec import *
 
 active_page = 0
 thread_event = None
-video_frame = None
+left_frame = None
+right_frame = None
 webcam = None
 
 root = Tk()
@@ -55,10 +56,13 @@ def getPage2():
       font="Arial 20 bold", pady=10).pack()
 
 
-def videoLoop():
-    global thread_event, video_frame, webcam
+def videoLoop(model, names):
+    global thread_event, left_frame, webcam
     video = None
     webcam = cv2.VideoCapture(0)
+    old_recognized = []
+    crims_found_labels = []
+
     try:
         while not thread_event.is_set():
             # Loop until the camera is working
@@ -70,32 +74,53 @@ def videoLoop():
                 else:
                     print("Failed to open webcam. Trying again...")
 
+            # Flip the image (optional)
+            frame = cv2.flip(frame, 1, 0)
             # Convert frame to grayscale
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+            # Detect Faces
             face_coords = detect_faces(gray_frame)
+            (frame, recognized) = recognize_face(model, frame, gray_frame, face_coords, names)
 
-            ###########recognize        OpenCV=BGR  PIL=RGB
-            img = cv2.resize(frame, (600, 600))
+            # Recognize Faces
+            recog_names = [item[0] for item in recognized]
+            if(recog_names != old_recognized):
+                for wid in right_frame.winfo_children():
+                    wid.destroy()
+                del(crims_found_labels[:])
+
+                for i in range(len(recognized)):
+                    crims_found_labels.append(Label(right_frame, text=recognized[i][0], bg="orange", font="Arial 15 bold", pady=20))
+                    crims_found_labels[i].pack(fill="x", padx=20, pady=10)
+
+                old_recognized = recog_names
+
+            # Display Video stream
+            img_size = min(left_frame.winfo_width(), left_frame.winfo_height()) - 20
+
+            img = cv2.resize(frame, (img_size, img_size))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(img)
             img = ImageTk.PhotoImage(img)
             if(not thread_event.is_set()):
                 if(video == None):
-                    video = Label(video_frame, image=img)
+                    video = Label(left_frame, image=img)
                     video.image = img
-                    video.pack(fill="both", expand=1)
+                    video.pack()
                 else:
                     video.configure(image = img)
                     video.image = img
 
     except RuntimeError:
         print("[INFO]Caught Runtime Error")
+    except TclError:
+        print("[INFO]Caught Tcl Error")
 
 
 ## video surveillance Page ##
 def getPage3():
-    global active_page, video_loop, video_frame, thread_event
+    global active_page, video_loop, left_frame, right_frame, thread_event
     active_page = 3
     pages[3].lift()
 
@@ -104,20 +129,25 @@ def getPage3():
     Label(pages[3], text="Video Surveillance", fg="white", bg="#202d42",
           font="Arial 20 bold", pady=10).pack()
 
-    content = Frame(pages[3], bg="pink", pady=100)
+    content = Frame(pages[3], bg="#202d42", pady=50)
     content.pack(expand="true", fill="both")
 
-    video_frame = Frame(content, bg="pink", width=600, height=600, padx=100)
-    video_frame.grid(row=0, column=0, sticky="NW")
+    left_frame = Frame(content, bg="#202d42", pady=20)
+    left_frame.grid(row=0, column=0, sticky="nsew")
 
-    output = Frame(content, bg="yellow", width=600, height=600, padx=50)
-    output.grid(row=0, column=1, sticky="NE")
+    right_frame = LabelFrame(content, text="Detected Criminals", bg="#202d42", font="Arial 20 bold", bd=4,
+                             foreground="#2ea3ef", labelanchor=N)
+    right_frame.grid(row=0, column=1, sticky="nsew", padx=20)
+
+    content.grid_columnconfigure(0, weight=1, uniform="group1")
+    content.grid_columnconfigure(1, weight=1, uniform="group1")
+    content.grid_rowconfigure(0, weight=1)
 
     (model, names) = train_model()
     print('Training Successful. Detecting Faces')
 
     thread_event = threading.Event()
-    thread = threading.Thread(target=videoLoop, args=())
+    thread = threading.Thread(target=videoLoop, args=(model, names))
     thread.start()
 
 
@@ -129,7 +159,6 @@ Label(pages[0], text="Criminal Identification System", fg="white", bg="#202d42",
 
 logo = PhotoImage(file = "logo.png")
 Label(pages[0], image=logo, bg="#202d42").pack()
-
 
 btn_frame = Frame(pages[0], bg="#202d42", pady=30)
 btn_frame.pack()

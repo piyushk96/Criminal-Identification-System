@@ -45,19 +45,18 @@ def train_model():
 def detect_faces(gray_frame):
     global size, haar_cascade
 
-    # Flip the image (optional)
-    gray_frame = cv2.flip(gray_frame, 1, 0)
-
     # Resize to speed up detection (optinal, change size above)
-    mini = cv2.resize(gray_frame, (int(gray_frame.shape[1] / size), int(gray_frame.shape[0] / size)))
+    mini_frame = cv2.resize(gray_frame, (int(gray_frame.shape[1] / size), int(gray_frame.shape[0] / size)))
 
     # Detect faces and loop through each one
-    faces = haar_cascade.detectMultiScale(mini)
+    faces = haar_cascade.detectMultiScale(mini_frame)
     return faces
 
 
 def recognize_face(model, frame, gray_frame, face_coords, names):
     (img_width, img_height) = (112, 92)
+    recognized = []
+    recog_names = []
 
     for i in range(len(face_coords)):
         face_i = face_coords[i]
@@ -70,20 +69,11 @@ def recognize_face(model, frame, gray_frame, face_coords, names):
         # Try to recognize the face
         (prediction, confidence) = model.predict(face_resize)
 
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0,0,255), 3)
+        if confidence<500:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            if(names[prediction] not in recog_names):
+                recog_names.append(names[prediction])
+                recognized.append((names[prediction].capitalize(), confidence))
 
-        # Write the name of recognized face    print(prediction, confidence)
-        if confidence > 500:
-            cv2.putText(frame,'Unknown',
-                    (x - 10, y - 10), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
-        else:
-            cv2.putText(frame,
-                    '%s - %d' % (names[prediction], confidence),
-                    (x - 10, y - 10), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2)
+    return (frame, recognized)
 
-
-    # # Show the image and check for ESC being pressed
-    # cv2.imshow('OpenCV', frame)
-    # key = cv2.waitKey(10)
-    # if key == 27:
-    #     return False
