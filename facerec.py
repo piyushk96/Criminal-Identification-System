@@ -69,7 +69,7 @@ def recognize_face(model, frame, gray_frame, face_coords, names):
         # Try to recognize the face
         (prediction, confidence) = model.predict(face_resize)
 
-        if (confidence<500 and names[prediction] not in recog_names):
+        if (confidence<1000 and names[prediction] not in recog_names):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
             recog_names.append(names[prediction])
             recognized.append((names[prediction].capitalize(), confidence))

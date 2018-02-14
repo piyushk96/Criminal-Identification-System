@@ -18,6 +18,7 @@ root = Tk()
 root.configure(background = '#202d42')
 root.geometry("1500x900")
 
+# create Pages
 pages = []
 for i in range(4):
     pages.append(Frame(root, bg="#202d42"))
@@ -73,11 +74,12 @@ def startRecognition():
         messagebox.showerror("Error", "No image selected. ")
         return
 
-    frame = img_read
+    # frame = img_read
     crims_found_labels = []
     for wid in right_frame.winfo_children():
         wid.destroy()
 
+    frame = cv2.flip(img_read, 1, 0)
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     face_coords = detect_faces(gray_frame)
@@ -85,7 +87,7 @@ def startRecognition():
     if (len(face_coords) != 0):
         (model, names) = train_model()
         print('Training Successful. Detecting Faces')
-        (frame, recognized) = recognize_face(model, img_read, gray_frame, face_coords, names)
+        (frame, recognized) = recognize_face(model, frame, gray_frame, face_coords, names)
 
         for i in range(len(recognized)):
             crims_found_labels.append(Label(right_frame, text=recognized[i][0], bg="orange",
@@ -93,6 +95,8 @@ def startRecognition():
             crims_found_labels[i].pack(fill="x", padx=20, pady=10)
 
     img_size = left_frame.winfo_height() - 40
+
+    frame = cv2.flip(frame, 1, 0)
     showImage(frame, img_size)
 
     if(len(face_coords) == 0):
