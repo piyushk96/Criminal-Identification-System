@@ -6,7 +6,7 @@ haar_cascade = cv2.CascadeClassifier('face_cascade.xml')
 
 # Part 1: Create fisherRecognizer
 def train_model():
-    model = cv2.face.FisherFaceRecognizer_create()
+    model = cv2.face.LBPHFaceRecognizer_create()
     fn_dir = 'face_samples'
 
     print('Training...')
@@ -69,7 +69,8 @@ def recognize_face(model, frame, gray_frame, face_coords, names):
         # Try to recognize the face
         (prediction, confidence) = model.predict(face_resize)
 
-        if (confidence<1000 and names[prediction] not in recog_names):
+        print(prediction, confidence)
+        if (confidence<100 and names[prediction] not in recog_names):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
             recog_names.append(names[prediction])
             recognized.append((names[prediction].capitalize(), confidence))
