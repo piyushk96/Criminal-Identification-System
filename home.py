@@ -10,6 +10,7 @@ active_page = 0
 thread_event = None
 left_frame = None
 right_frame = None
+heading = None
 webcam = None
 img_label = None
 img_read = None
@@ -40,6 +41,31 @@ def goBack():
     pages[0].lift()
     active_page = 0
 
+
+def basicPageSetup(pageNo):
+    global left_frame, right_frame, heading
+
+    Button(pages[pageNo], image=back_button, bg="#202d42", bd=0, highlightthickness=0,
+           activebackground="#202d42", command=goBack).place(x=10, y=10)
+    heading = Label(pages[pageNo], text="Detect Criminal", fg="white", bg="#202d42",
+          font="Arial 20 bold", pady=10)
+    heading.pack()
+
+    content = Frame(pages[pageNo], bg="#202d42", pady=50)
+    content.pack(expand="true", fill="both")
+
+    left_frame = Frame(content, bg="#202d42")
+    left_frame.grid(row=0, column=0, sticky="nsew")
+
+    right_frame = LabelFrame(content, text="Detected Criminals", bg="#202d42", font="Arial 20 bold", bd=4,
+                             foreground="#2ea3ef", labelanchor=N)
+    right_frame.grid(row=0, column=1, sticky="nsew", padx=20)
+
+    content.grid_columnconfigure(0, weight=1, uniform="group1")
+    content.grid_columnconfigure(1, weight=1, uniform="group1")
+    content.grid_rowconfigure(0, weight=1)
+
+
 def showImage(frame, img_size):
     global img_label, left_frame
 
@@ -54,17 +80,6 @@ def showImage(frame, img_size):
     else:
         img_label.configure(image=img)
         img_label.image = img
-
-
-## Register Page ##
-def getPage1():
-    global active_page
-    active_page = 1
-    pages[1].lift()
-    Button(pages[1], image=back_button, bg="#202d42", bd=0, highlightthickness=0,
-           activebackground="#202d42", command=goBack).place(x=10, y=10)
-    Label(pages[1], text="Register Criminal", fg="white", bg="#202d42",
-          font="Arial 20 bold", pady=10).pack()
 
 
 def startRecognition():
@@ -122,30 +137,26 @@ def selectImage():
         showImage(img_read, img_size)
 
 
+## Register Page ##
+def getPage1():
+    global active_page, left_frame, right_frame, heading
+    active_page = 1
+    pages[1].lift()
+
+    basicPageSetup(1)
+    heading.configure(text="Register Criminal")
+
+
 ## Detection Page ##
 def getPage2():
-    global active_page, left_frame, right_frame, img_label
+    global active_page, left_frame, right_frame, img_label, heading
     img_label = None
     active_page = 2
     pages[2].lift()
-    Button(pages[2], image=back_button, bg="#202d42", bd=0, highlightthickness=0,
-           activebackground="#202d42", command=goBack).place(x=10, y=10)
-    Label(pages[2], text="Detect Criminal", fg="white", bg="#202d42",
-      font="Arial 20 bold", pady=10).pack()
 
-    content = Frame(pages[2], bg="#202d42", pady=50)
-    content.pack(expand="true", fill="both")
-
-    left_frame = Frame(content, bg="#202d42")
-    left_frame.grid(row=0, column=0, sticky="nsew")
-
-    right_frame = LabelFrame(content, text="Detected Criminals", bg="#202d42", font="Arial 20 bold", bd=4,
-                             foreground="#2ea3ef", labelanchor=N)
-    right_frame.grid(row=0, column=1, sticky="nsew", padx=20)
-
-    content.grid_columnconfigure(0, weight=1, uniform="group1")
-    content.grid_columnconfigure(1, weight=1, uniform="group1")
-    content.grid_rowconfigure(0, weight=1)
+    basicPageSetup(2)
+    heading.configure(text="Detect Criminal")
+    right_frame.configure(text="Detected Criminals")
 
     btn_grid = Frame(left_frame, bg="#202d42")
     btn_grid.pack()
@@ -216,24 +227,9 @@ def getPage3():
     active_page = 3
     pages[3].lift()
 
-    Button(pages[3], image=back_button, bg="#202d42", bd=0, highlightthickness=0,
-           activebackground="#202d42", command=goBack).place(x=10, y=10)
-    Label(pages[3], text="Video Surveillance", fg="white", bg="#202d42",
-          font="Arial 20 bold", pady=10).pack()
-
-    content = Frame(pages[3], bg="#202d42", pady=50)
-    content.pack(expand="true", fill="both")
-
-    left_frame = Frame(content, bg="#202d42", pady=20)
-    left_frame.grid(row=0, column=0, sticky="nsew")
-
-    right_frame = LabelFrame(content, text="Detected Criminals", bg="#202d42", font="Arial 20 bold", bd=4,
-                             foreground="#2ea3ef", labelanchor=N)
-    right_frame.grid(row=0, column=1, sticky="nsew", padx=20)
-
-    content.grid_columnconfigure(0, weight=1, uniform="group1")
-    content.grid_columnconfigure(1, weight=1, uniform="group1")
-    content.grid_rowconfigure(0, weight=1)
+    basicPageSetup(3)
+    heading.configure(text="Video Surveillance")
+    right_frame.configure(text="Detected Criminals")
 
     (model, names) = train_model()
     print('Training Successful. Detecting Faces')
