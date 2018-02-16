@@ -5,6 +5,7 @@ from PIL import Image
 from PIL import ImageTk
 import threading
 from facerec import *
+from register import *
 
 active_page = 0
 thread_event = None
@@ -14,6 +15,7 @@ heading = None
 webcam = None
 img_label = None
 img_read = None
+img_list = []
 
 root = Tk()
 root.configure(background = '#202d42')
@@ -125,16 +127,42 @@ def selectImage():
     for wid in right_frame.winfo_children():
         wid.destroy()
 
-    path = filedialog.askopenfilename(title="Choose a image")
-    if len(path) > 0:
-        if(path.split(".")[-1].lower() not in ['png','jpg','jpeg','gif','pgm']):
-            messagebox.showerror("Error", "Selected file is not an image. ")
-            return
+    filetype = [("images", "*.jpg *.jpeg *.png")]
+    path = filedialog.askopenfilename(title="Choose a image", filetypes=filetype)
 
-        img_read = cv2.imread(path)
+    img_read = cv2.imread(path)
 
-        img_size =  left_frame.winfo_height() - 40
-        showImage(img_read, img_size)
+    img_size =  left_frame.winfo_height() - 40
+    showImage(img_read, img_size)
+
+
+def selectMultiImage():
+    global img_list
+    img_list = []
+
+    filetype = [("images", "*.jpg *.jpeg *.png")]
+    path_list = filedialog.askopenfilenames(title="Choose atleast 9 images", filetypes=filetype)
+
+    for path in path_list:
+        print(path)
+        img_list.append(cv2.imread(path))
+
+
+def register(name):
+    global img_list
+
+    if(len(img_list) == 0):
+        messagebox.showerror("Error", "Select Images first.")
+    elif(len(name) == 0):
+        messagebox.showerror("Error", "Enter the name first.")
+    else:
+        # Setting Directory
+        path = os.path.join('face_samples', name)
+        if not os.path.isdir(path):
+            os.mkdir(path)
+
+        for i in range(len(img_list)):
+            registerCriminal(img_list[i], path, i+1)
 
 
 ## Register Page ##
@@ -145,6 +173,11 @@ def getPage1():
 
     basicPageSetup(1)
     heading.configure(text="Register Criminal")
+
+    Button(left_frame, text="Select Images", command=selectMultiImage).pack()
+    name = Entry(right_frame)
+    name.pack()
+    Button(right_frame, text="Register", command=lambda: register(name.get())).pack()
 
 
 ## Detection Page ##
