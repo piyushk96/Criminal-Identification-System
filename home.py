@@ -166,9 +166,12 @@ def selectMultiImage():
     if(len(path_list) > 0):
         img_list = []
         current_slide = -1
+
+        # Resetting slide control panel
         if (slide_control_panel != None):
             slide_control_panel.destroy()
 
+        # Creating Image list
         for path in path_list:
             print(path)
             img_list.append(cv2.imread(path))
@@ -217,6 +220,10 @@ def register(name):
             registerCriminal(img_list[i], path, i+1)
 
 
+## update scrollregion when all widgets are in canvas
+def on_configure(canvas):
+    canvas.configure(scrollregion=canvas.bbox('all'))
+
 ## Register Page ##
 def getPage1():
     global active_page, left_frame, right_frame, heading
@@ -238,9 +245,38 @@ def getPage1():
     #        activeforeground="white").grid(row=0, column=1, padx=25, pady=25)
 
 
-    name = Entry(right_frame)
-    name.pack()
-    Button(right_frame, text="Register", command=lambda: register(name.get())).pack()
+    # Creating Scrollable Frame
+    canvas = Canvas(right_frame, bg="#202d42", highlightthickness=0)
+    canvas.pack(side="left", fill="both", expand="true", padx=30)
+    scrollbar = Scrollbar(right_frame, command=canvas.yview, width=20, troughcolor="#202d42", bd=0,
+                          activebackground="#00bcd4", bg="#2196f3", relief="raised")
+    scrollbar.pack(side="left", fill="y")
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>', lambda event, canvas=canvas: on_configure(canvas))
+
+    scroll_frame = Frame(canvas, bg="#202d42")
+    canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
+
+
+    # Adding Input Fields
+    input_fields = ("First Name", "Last Name", "Father's Name", "Mother's Name", "Gender", "DOB", "Blood Group",
+                    "Identification Mark", "Caste", "Nationality", "Mother Tongue")
+
+    entries = []
+    for field in input_fields:
+        row = Frame(scroll_frame, bg="#202d42")
+        lab = Label(row, width=20, text=field, anchor="w", bg="#202d42", fg="#ffffff", font="Arial 15")
+        ent = Entry(row, font="Arial 15")
+        row.pack(side="top", fill="x", pady=15)
+        lab.pack(side="left")
+        ent.pack(side="right", expand="true", fill="x", padx=10)
+        entries.append((lab, ent))
+
+
+    Button(scroll_frame, text="Register", command=lambda: register(entries[0][1].get()), font="Arial 15 bold",
+           bg="#2196f3", fg="white", pady=10, padx=30, bd=0, highlightthickness=0, activebackground="#091428",
+           activeforeground="white").pack(pady=15)
 
 
 ## Detection Page ##
