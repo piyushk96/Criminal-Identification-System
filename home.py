@@ -4,8 +4,10 @@ from tkinter import messagebox
 from PIL import Image
 from PIL import ImageTk
 import threading
+import shutil
 from facerec import *
 from register import *
+from dbHandler import *
 
 active_page = 0
 thread_event = None
@@ -161,9 +163,11 @@ def selectMultiImage():
     global img_list, current_slide, slide_caption, slide_control_panel
 
     filetype = [("images", "*.jpg *.jpeg *.png")]
-    path_list = filedialog.askopenfilenames(title="Choose atleast 9 images", filetypes=filetype)
+    path_list = filedialog.askopenfilenames(title="Choose atleast 5 images", filetypes=filetype)
 
-    if(len(path_list) > 0):
+    if(len(path_list) < 5):
+        messagebox.showerror("Error", "Choose atleast 5 images.")
+    else:
         img_list = []
         current_slide = -1
 
@@ -173,7 +177,6 @@ def selectMultiImage():
 
         # Creating Image list
         for path in path_list:
-            print(path)
             img_list.append(cv2.imread(path))
 
 
@@ -203,21 +206,58 @@ def selectMultiImage():
         next_slide.grid(row=0, column=2, padx=60)
 
 
-def register(name):
+def register(entries, required):
     global img_list
 
+    # Checking if no image selected
     if(len(img_list) == 0):
         messagebox.showerror("Error", "Select Images first.")
-    elif(len(name) == 0):
-        messagebox.showerror("Error", "Enter the name first.")
-    else:
-        # Setting Directory
-        path = os.path.join('face_samples', name)
-        if not os.path.isdir(path):
-            os.mkdir(path)
+        return
 
-        for i in range(len(img_list)):
-            registerCriminal(img_list[i], path, i+1)
+    # Fetching data from entries
+    entry_data = {}
+    for i in range(len(entries)):
+        val = entries[i][1].get()
+
+        if (len(val) == 0 and required[i] == 1):
+            messagebox.showerror("Field Error", "Required field missing :\n\n%s" % (entries[i][0]))
+            return
+        else:
+            entry_data[entries[i][0]] = val
+
+
+    # Setting Directory
+    path = os.path.join('face_samples', "temp_criminal")
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+    no_face = []
+    for i in range(len(img_list)):
+        # Storing Images in directory
+        id = registerCriminal(img_list[i], path, i + 1)
+        if(id != None):
+            no_face.append(id)
+
+    # check if any image doesn't contain face
+    if(len(no_face) > 0):
+        no_face_st = ""
+        for i in no_face:
+            no_face_st += "Image " + str(i) + ", "
+        messagebox.showerror("Registration Error", "Registration failed!\n\nFollowing images doesn't contain"
+                        " face or Face is too small:\n\n%s"%(no_face_st))
+        shutil.rmtree(path, ignore_errors=True)
+    else:
+        # Storing data in database
+        rowId = insertData(entry_data)
+
+        if(rowId > 0):
+            print("Storing data on row %d"%rowId)
+            messagebox.showinfo("Success", "Criminal Registered Successfully.")
+            os.rename(path, os.path.join('face_samples', entry_data["Name"]))
+            goBack()
+        else:
+            shutil.rmtree(path, ignore_errors=True)
+            messagebox.showerror("Database Error", "Some error occured while storing data.")
 
 
 ## update scrollregion when all widgets are in canvas
@@ -255,28 +295,28 @@ def getPage1():
     canvas.configure(yscrollcommand=scrollbar.set)
     canvas.bind('<Configure>', lambda event, canvas=canvas: on_configure(canvas))
 
-    scroll_frame = Frame(canvas, bg="#202d42")
+    scroll_frame = Frame(canvas, bg="#202d42", pady=20)
     canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
 
 
     # Adding Input Fields
-    input_fields = ("First Name", "Last Name", "Father's Name", "Mother's Name", "Gender", "DOB", "Blood Group",
-                    "Identification Mark", "Caste", "Nationality", "Mother Tongue")
+    input_fields = ("Name", "Father's Name", "Mother's Name", "Gender", "DOB(yyyy-mm-dd)", "Blood Group",
+                    "Identification Mark", "Nationality", "Mother Tongue", "Crimes Done")
+    required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
 
     entries = []
     for field in input_fields:
         row = Frame(scroll_frame, bg="#202d42")
-        lab = Label(row, width=20, text=field, anchor="w", bg="#202d42", fg="#ffffff", font="Arial 15")
-        ent = Entry(row, font="Arial 15")
+        lab = Label(row, width=15, text=field, anchor="w", bg="#202d42", fg="#ffffff", font="Arial 15")
+        ent = Entry(row, font="Arial 15", selectbackground="#90ceff")
         row.pack(side="top", fill="x", pady=15)
         lab.pack(side="left")
         ent.pack(side="right", expand="true", fill="x", padx=10)
-        entries.append((lab, ent))
+        entries.append((field, ent))
 
-
-    Button(scroll_frame, text="Register", command=lambda: register(entries[0][1].get()), font="Arial 15 bold",
+    Button(scroll_frame, text="Register", command=lambda: register(entries, required), font="Arial 15 bold",
            bg="#2196f3", fg="white", pady=10, padx=30, bd=0, highlightthickness=0, activebackground="#091428",
-           activeforeground="white").pack(pady=15)
+           activeforeground="white").pack(pady=25)
 
 
 ## Detection Page ##
@@ -396,7 +436,6 @@ for btn in btn_frame.winfo_children():
 
 
 pages[0].lift()
-getPage1()
 root.mainloop()
 
 # aWidget.tk.call('tk', 'scaling', 1)

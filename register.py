@@ -29,7 +29,9 @@ def registerCriminal(img, path, img_num):
         face = cv2.flip(face, 1, 0)
         cv2.imwrite('%s/%s.png' % (path, file_num), face)
 
-    # else:
-    #     # No face present
-    #     print("img %d : Face is not present" % (i + 1))
-    #     no_face.append(i+1)
+    else:
+        # No face present
+        print("img %d : Face is not present" % (img_num))
+        return img_num
+
+    return None
