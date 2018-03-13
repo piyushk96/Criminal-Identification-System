@@ -261,8 +261,9 @@ def register(entries, required):
 
 
 ## update scrollregion when all widgets are in canvas
-def on_configure(canvas):
+def on_configure(event, canvas, win):
     canvas.configure(scrollregion=canvas.bbox('all'))
+    canvas.itemconfig(win, width=event.width)
 
 ## Register Page ##
 def getPage1():
@@ -292,27 +293,39 @@ def getPage1():
                           activebackground="#00bcd4", bg="#2196f3", relief="raised")
     scrollbar.pack(side="left", fill="y")
 
-    canvas.configure(yscrollcommand=scrollbar.set)
-    canvas.bind('<Configure>', lambda event, canvas=canvas: on_configure(canvas))
-
     scroll_frame = Frame(canvas, bg="#202d42", pady=20)
-    canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
+    scroll_win = canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>', lambda event, canvas=canvas, win=scroll_win: on_configure(event, canvas, win))
 
 
+    Label(scroll_frame, text="* Required Fields", bg="#202d42", fg="yellow", font="Arial 13 bold").pack()
     # Adding Input Fields
     input_fields = ("Name", "Father's Name", "Mother's Name", "Gender", "DOB(yyyy-mm-dd)", "Blood Group",
                     "Identification Mark", "Nationality", "Mother Tongue", "Crimes Done")
     required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
 
     entries = []
+    i = 0
     for field in input_fields:
         row = Frame(scroll_frame, bg="#202d42")
-        lab = Label(row, width=15, text=field, anchor="w", bg="#202d42", fg="#ffffff", font="Arial 15")
-        ent = Entry(row, font="Arial 15", selectbackground="#90ceff")
         row.pack(side="top", fill="x", pady=15)
-        lab.pack(side="left")
+
+        label = Text(row, width=20, height=1, bg="#202d42", fg="#ffffff", font="Arial 13", highlightthickness=0, bd=0)
+        label.insert(INSERT, field)
+        label.pack(side="left")
+
+        if(required[i] == 1):
+            label.tag_configure("star", foreground="yellow", font="Arial 13 bold")
+            label.insert(END, "  *", "star")
+        label.configure(state="disabled")
+
+        ent = Entry(row, font="Arial 13", selectbackground="#90ceff")
         ent.pack(side="right", expand="true", fill="x", padx=10)
+
         entries.append((field, ent))
+        i += 1
 
     Button(scroll_frame, text="Register", command=lambda: register(entries, required), font="Arial 15 bold",
            bg="#2196f3", fg="white", pady=10, padx=30, bd=0, highlightthickness=0, activebackground="#091428",
@@ -436,6 +449,7 @@ for btn in btn_frame.winfo_children():
 
 
 pages[0].lift()
+getPage1()
 root.mainloop()
 
 # aWidget.tk.call('tk', 'scaling', 1)
