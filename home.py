@@ -91,59 +91,6 @@ def showImage(frame, img_size):
         img_label.image = img
 
 
-def startRecognition():
-    global img_read, img_label
-
-    if(img_label == None):
-        messagebox.showerror("Error", "No image selected. ")
-        return
-
-    # frame = img_read
-    crims_found_labels = []
-    for wid in right_frame.winfo_children():
-        wid.destroy()
-
-    frame = cv2.flip(img_read, 1, 0)
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    face_coords = detect_faces(gray_frame)
-
-    if (len(face_coords) != 0):
-        (model, names) = train_model()
-        print('Training Successful. Detecting Faces')
-        (frame, recognized) = recognize_face(model, frame, gray_frame, face_coords, names)
-
-        for i in range(len(recognized)):
-            crims_found_labels.append(Label(right_frame, text=recognized[i][0], bg="orange",
-                                            font="Arial 15 bold", pady=20))
-            crims_found_labels[i].pack(fill="x", padx=20, pady=10)
-
-    img_size = left_frame.winfo_height() - 40
-
-    frame = cv2.flip(frame, 1, 0)
-    showImage(frame, img_size)
-
-    if(len(face_coords) == 0):
-        messagebox.showerror("Error", "Image doesn't contain any face or face is too small.")
-    elif(len(recognized) == 0):
-        messagebox.showerror("Error", "No criminal recognized.")
-
-
-def selectImage():
-    global left_frame, img_label, img_read
-    for wid in right_frame.winfo_children():
-        wid.destroy()
-
-    filetype = [("images", "*.jpg *.jpeg *.png")]
-    path = filedialog.askopenfilename(title="Choose a image", filetypes=filetype)
-
-    if(len(path) > 0):
-        img_read = cv2.imread(path)
-
-        img_size =  left_frame.winfo_height() - 40
-        showImage(img_read, img_size)
-
-
 def getNewSlide(control):
     global img_list, current_slide
 
@@ -267,8 +214,9 @@ def on_configure(event, canvas, win):
 
 ## Register Page ##
 def getPage1():
-    global active_page, left_frame, right_frame, heading
+    global active_page, left_frame, right_frame, heading, img_label
     active_page = 1
+    img_label = None
     pages[1].lift()
 
     basicPageSetup(1)
@@ -281,7 +229,7 @@ def getPage1():
     Button(btn_grid, text="Select Images", command=selectMultiImage, font="Arial 15 bold", bg="#2196f3",
            fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").grid(row=0, column=0, padx=25, pady=25)
-    # Button(btn_grid, text="Start Camera", command=startRecognition, font="Arial 15 bold", padx=20, bg="#2196f3",
+    # Button(btn_grid, text="Start Camera", command=, font="Arial 15 bold", padx=20, bg="#2196f3",
     #        fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
     #        activeforeground="white").grid(row=0, column=1, padx=25, pady=25)
 
@@ -330,6 +278,59 @@ def getPage1():
     Button(scroll_frame, text="Register", command=lambda: register(entries, required), font="Arial 15 bold",
            bg="#2196f3", fg="white", pady=10, padx=30, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").pack(pady=25)
+
+
+def startRecognition():
+    global img_read, img_label
+
+    if(img_label == None):
+        messagebox.showerror("Error", "No image selected. ")
+        return
+
+    crims_found_labels = []
+    for wid in right_frame.winfo_children():
+        wid.destroy()
+
+    frame = cv2.flip(img_read, 1, 0)
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    face_coords = detect_faces(gray_frame)
+
+    if (len(face_coords) == 0):
+        messagebox.showerror("Error", "Image doesn't contain any face or face is too small.")
+    else:
+        (model, names) = train_model()
+        print('Training Successful. Detecting Faces')
+        (frame, recognized) = recognize_face(model, frame, gray_frame, face_coords, names)
+
+        if (len(recognized) == 0):
+            messagebox.showerror("Error", "No criminal recognized.")
+            return
+
+        for i in range(len(recognized)):
+            crims_found_labels.append(Label(right_frame, text=recognized[i][0], bg="orange",
+                                            font="Arial 15 bold", pady=20))
+            crims_found_labels[i].pack(fill="x", padx=20, pady=10)
+
+        img_size = left_frame.winfo_height() - 40
+
+        frame = cv2.flip(frame, 1, 0)
+        showImage(frame, img_size)
+
+
+def selectImage():
+    global left_frame, img_label, img_read
+    for wid in right_frame.winfo_children():
+        wid.destroy()
+
+    filetype = [("images", "*.jpg *.jpeg *.png")]
+    path = filedialog.askopenfilename(title="Choose a image", filetypes=filetype)
+
+    if(len(path) > 0):
+        img_read = cv2.imread(path)
+
+        img_size =  left_frame.winfo_height() - 40
+        showImage(img_read, img_size)
 
 
 ## Detection Page ##
@@ -449,7 +450,6 @@ for btn in btn_frame.winfo_children():
 
 
 pages[0].lift()
-getPage1()
 root.mainloop()
 
 # aWidget.tk.call('tk', 'scaling', 1)

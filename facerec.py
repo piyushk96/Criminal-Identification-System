@@ -27,7 +27,7 @@ def train_model():
                     continue
                 path = subjectpath + '/' + filename
                 lable = id
-                
+
                 # Add to training data
                 images.append(cv2.imread(path, 0))
                 lables.append(int(lable))
@@ -70,7 +70,7 @@ def recognize_face(model, frame, gray_frame, face_coords, names):
         (prediction, confidence) = model.predict(face_resize)
 
         print(prediction, confidence)
-        if (confidence<100 and names[prediction] not in recog_names):
+        if (confidence<95 and names[prediction] not in recog_names):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
             recog_names.append(names[prediction])
             recognized.append((names[prediction].capitalize(), confidence))
