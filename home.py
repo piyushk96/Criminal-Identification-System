@@ -1,4 +1,4 @@
-from tkinter import *
+import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from PIL import Image
@@ -22,14 +22,14 @@ slide_caption = None
 slide_control_panel = None
 current_slide = -1
 
-root = Tk()
+root = tk.Tk()
 # root.configure(background = '#202d42')
 root.geometry("1500x900")
 
 # create Pages
 pages = []
 for i in range(4):
-    pages.append(Frame(root, bg="#202d42"))
+    pages.append(tk.Frame(root, bg="#202d42"))
     pages[i].pack(side="top", fill="both", expand=True)
     pages[i].place(x=0, y=0, relwidth=1, relheight=1)
 
@@ -51,23 +51,23 @@ def goBack():
 def basicPageSetup(pageNo):
     global left_frame, right_frame, heading
 
-    back_img = PhotoImage(file="back.png")
-    back_button = Button(pages[pageNo], image=back_img, bg="#202d42", bd=0, highlightthickness=0,
+    back_img = tk.PhotoImage(file="back.png")
+    back_button = tk.Button(pages[pageNo], image=back_img, bg="#202d42", bd=0, highlightthickness=0,
            activebackground="#202d42", command=goBack)
     back_button.image = back_img
     back_button.place(x=10, y=10)
 
-    heading = Label(pages[pageNo], fg="white", bg="#202d42", font="Arial 20 bold", pady=10)
+    heading = tk.Label(pages[pageNo], fg="white", bg="#202d42", font="Arial 20 bold", pady=10)
     heading.pack()
 
-    content = Frame(pages[pageNo], bg="#202d42", pady=20)
+    content = tk.Frame(pages[pageNo], bg="#202d42", pady=20)
     content.pack(expand="true", fill="both")
 
-    left_frame = Frame(content, bg="#202d42")
+    left_frame = tk.Frame(content, bg="#202d42")
     left_frame.grid(row=0, column=0, sticky="nsew")
 
-    right_frame = LabelFrame(content, text="Detected Criminals", bg="#202d42", font="Arial 20 bold", bd=4,
-                             foreground="#2ea3ef", labelanchor=N)
+    right_frame = tk.LabelFrame(content, text="Detected Criminals", bg="#202d42", font="Arial 20 bold", bd=4,
+                             foreground="#2ea3ef", labelanchor="n")
     right_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
 
     content.grid_columnconfigure(0, weight=1, uniform="group1")
@@ -83,7 +83,7 @@ def showImage(frame, img_size):
     img = Image.fromarray(img)
     img = ImageTk.PhotoImage(img)
     if (img_label == None):
-        img_label = Label(left_frame, image=img, bg="#202d42")
+        img_label = tk.Label(left_frame, image=img, bg="#202d42")
         img_label.image = img
         img_label.pack(padx=20)
     else:
@@ -106,7 +106,7 @@ def getNewSlide(control):
         slide_caption.configure(text = "Image {} of {}".format(current_slide+1, len(img_list)))
 
 
-def selectMultiImage():
+def selectMultiImage(opt_menu, menu_var):
     global img_list, current_slide, slide_caption, slide_control_panel
 
     filetype = [("images", "*.jpg *.jpeg *.png")]
@@ -126,34 +126,43 @@ def selectMultiImage():
         for path in path_list:
             img_list.append(cv2.imread(path))
 
+        # Creating choices for profile pic menu
+        menu_var.set("")
+        opt_menu['menu'].delete(0, 'end')
+
+        for i in range(len(img_list)):
+            ch = "Image " + str(i+1)
+            opt_menu['menu'].add_command(label=ch, command= tk._setit(menu_var, ch))
+            menu_var.set("Image 1")
+
 
         # Creating slideshow of images
         img_size =  left_frame.winfo_height() - 200
         current_slide += 1
         showImage(img_list[current_slide], img_size)
 
-        slide_control_panel = Frame(left_frame, bg="#202d42", pady=20)
+        slide_control_panel = tk.Frame(left_frame, bg="#202d42", pady=20)
         slide_control_panel.pack()
 
-        back_img = PhotoImage(file="previous.png")
-        next_img = PhotoImage(file="next.png")
+        back_img = tk.PhotoImage(file="previous.png")
+        next_img = tk.PhotoImage(file="next.png")
 
-        prev_slide = Button(slide_control_panel, image=back_img, bg="#202d42", bd=0, highlightthickness=0,
+        prev_slide = tk.Button(slide_control_panel, image=back_img, bg="#202d42", bd=0, highlightthickness=0,
                             activebackground="#202d42", command=lambda : getNewSlide("prev"))
         prev_slide.image = back_img
         prev_slide.grid(row=0, column=0, padx=60)
 
-        slide_caption = Label(slide_control_panel, text="Image 1 of {}".format(len(img_list)), fg="#ff9800",
+        slide_caption = tk.Label(slide_control_panel, text="Image 1 of {}".format(len(img_list)), fg="#ff9800",
                               bg="#202d42", font="Arial 15 bold")
         slide_caption.grid(row=0, column=1)
 
-        next_slide = Button(slide_control_panel, image=next_img, bg="#202d42", bd=0, highlightthickness=0,
+        next_slide = tk.Button(slide_control_panel, image=next_img, bg="#202d42", bd=0, highlightthickness=0,
                             activebackground="#202d42", command=lambda : getNewSlide("next"))
         next_slide.image = next_img
         next_slide.grid(row=0, column=2, padx=60)
 
 
-def register(entries, required):
+def register(entries, required, menu_var):
     global img_list
 
     # Checking if no image selected
@@ -198,9 +207,15 @@ def register(entries, required):
         rowId = insertData(entry_data)
 
         if(rowId > 0):
-            print("Storing data on row %d"%rowId)
             messagebox.showinfo("Success", "Criminal Registered Successfully.")
             os.rename(path, os.path.join('face_samples', entry_data["Name"]))
+
+            # save profile pic
+            profile_img_num = int(menu_var.get().split(' ')[1]) - 1
+            if not os.path.isdir("profile_pics"):
+                os.mkdir("profile_pics")
+            cv2.imwrite("profile_pics/criminal %d.png"%rowId, img_list[profile_img_num])
+
             goBack()
         else:
             shutil.rmtree(path, ignore_errors=True)
@@ -217,16 +232,18 @@ def getPage1():
     global active_page, left_frame, right_frame, heading, img_label
     active_page = 1
     img_label = None
+    opt_menu = None
+    menu_var = tk.StringVar(root)
     pages[1].lift()
 
     basicPageSetup(1)
     heading.configure(text="Register Criminal")
     right_frame.configure(text="Enter Details")
 
-    btn_grid = Frame(left_frame, bg="#202d42")
+    btn_grid = tk.Frame(left_frame, bg="#202d42")
     btn_grid.pack()
 
-    Button(btn_grid, text="Select Images", command=selectMultiImage, font="Arial 15 bold", bg="#2196f3",
+    tk.Button(btn_grid, text="Select Images", command=lambda: selectMultiImage(opt_menu, menu_var), font="Arial 15 bold", bg="#2196f3",
            fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").grid(row=0, column=0, padx=25, pady=25)
     # Button(btn_grid, text="Start Camera", command=, font="Arial 15 bold", padx=20, bg="#2196f3",
@@ -235,47 +252,57 @@ def getPage1():
 
 
     # Creating Scrollable Frame
-    canvas = Canvas(right_frame, bg="#202d42", highlightthickness=0)
+    canvas = tk.Canvas(right_frame, bg="#202d42", highlightthickness=0)
     canvas.pack(side="left", fill="both", expand="true", padx=30)
-    scrollbar = Scrollbar(right_frame, command=canvas.yview, width=20, troughcolor="#202d42", bd=0,
+    scrollbar = tk.Scrollbar(right_frame, command=canvas.yview, width=20, troughcolor="#202d42", bd=0,
                           activebackground="#00bcd4", bg="#2196f3", relief="raised")
     scrollbar.pack(side="left", fill="y")
 
-    scroll_frame = Frame(canvas, bg="#202d42", pady=20)
+    scroll_frame = tk.Frame(canvas, bg="#202d42", pady=20)
     scroll_win = canvas.create_window((0, 0), window=scroll_frame, anchor='nw')
 
     canvas.configure(yscrollcommand=scrollbar.set)
     canvas.bind('<Configure>', lambda event, canvas=canvas, win=scroll_win: on_configure(event, canvas, win))
 
 
-    Label(scroll_frame, text="* Required Fields", bg="#202d42", fg="yellow", font="Arial 13 bold").pack()
+    tk.Label(scroll_frame, text="* Required Fields", bg="#202d42", fg="yellow", font="Arial 13 bold").pack()
     # Adding Input Fields
     input_fields = ("Name", "Father's Name", "Mother's Name", "Gender", "DOB(yyyy-mm-dd)", "Blood Group",
-                    "Identification Mark", "Nationality", "Mother Tongue", "Crimes Done")
-    required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
+                    "Identification Mark", "Nationality", "Mother Tongue", "Crimes Done", "Profile Image")
+    ip_len = len(input_fields)
+    required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]
 
     entries = []
     i = 0
     for field in input_fields:
-        row = Frame(scroll_frame, bg="#202d42")
+        row = tk.Frame(scroll_frame, bg="#202d42")
         row.pack(side="top", fill="x", pady=15)
 
-        label = Text(row, width=20, height=1, bg="#202d42", fg="#ffffff", font="Arial 13", highlightthickness=0, bd=0)
-        label.insert(INSERT, field)
+        label = tk.Text(row, width=20, height=1, bg="#202d42", fg="#ffffff", font="Arial 13", highlightthickness=0, bd=0)
+        label.insert("insert", field)
         label.pack(side="left")
 
         if(required[i] == 1):
             label.tag_configure("star", foreground="yellow", font="Arial 13 bold")
-            label.insert(END, "  *", "star")
+            label.insert("end", "  *", "star")
         label.configure(state="disabled")
 
-        ent = Entry(row, font="Arial 13", selectbackground="#90ceff")
-        ent.pack(side="right", expand="true", fill="x", padx=10)
+        if(i != ip_len-1):
+            ent = tk.Entry(row, font="Arial 13", selectbackground="#90ceff")
+            ent.pack(side="right", expand="true", fill="x", padx=10)
+            entries.append((field, ent))
+        else:
+            menu_var.set("Image 1")
+            choices = ["Image 1"]
+            opt_menu = tk.OptionMenu(row, menu_var, *choices)
+            opt_menu.pack(side="right", fill="x", expand="true", padx=10)
+            opt_menu.configure(font="Arial 13", bg="#2196f3", fg="white", bd=0, highlightthickness=0, activebackground="#90ceff")
+            menu = opt_menu.nametowidget(opt_menu.menuname)
+            menu.configure(font="Arial 13", bg="white", activebackground="#90ceff", bd=0)
 
-        entries.append((field, ent))
         i += 1
 
-    Button(scroll_frame, text="Register", command=lambda: register(entries, required), font="Arial 15 bold",
+    tk.Button(scroll_frame, text="Register", command=lambda: register(entries, required, menu_var), font="Arial 15 bold",
            bg="#2196f3", fg="white", pady=10, padx=30, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").pack(pady=25)
 
@@ -308,7 +335,7 @@ def startRecognition():
             return
 
         for i in range(len(recognized)):
-            crims_found_labels.append(Label(right_frame, text=recognized[i][0], bg="orange",
+            crims_found_labels.append(tk.Label(right_frame, text=recognized[i][0], bg="orange",
                                             font="Arial 15 bold", pady=20))
             crims_found_labels[i].pack(fill="x", padx=20, pady=10)
 
@@ -344,13 +371,13 @@ def getPage2():
     heading.configure(text="Detect Criminal")
     right_frame.configure(text="Detected Criminals")
 
-    btn_grid = Frame(left_frame, bg="#202d42")
+    btn_grid = tk.Frame(left_frame, bg="#202d42")
     btn_grid.pack()
 
-    Button(btn_grid, text="Select Image", command=selectImage, font="Arial 15 bold", padx=20, bg="#2196f3",
+    tk.Button(btn_grid, text="Select Image", command=selectImage, font="Arial 15 bold", padx=20, bg="#2196f3",
             fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
             activeforeground="white").grid(row=0, column=0, padx=25, pady=25)
-    Button(btn_grid, text="Recognize", command=startRecognition, font="Arial 15 bold", padx=20, bg="#2196f3",
+    tk.Button(btn_grid, text="Recognize", command=startRecognition, font="Arial 15 bold", padx=20, bg="#2196f3",
            fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").grid(row=0, column=1, padx=25, pady=25)
 
@@ -390,7 +417,7 @@ def videoLoop(model, names):
                 del(crims_found_labels[:])
 
                 for i in range(len(recognized)):
-                    crims_found_labels.append(Label(right_frame, text=recognized[i][0], bg="orange",
+                    crims_found_labels.append(tk.Label(right_frame, text=recognized[i][0], bg="orange",
                                                     font="Arial 15 bold", pady=20))
                     crims_found_labels[i].pack(fill="x", padx=20, pady=10)
 
@@ -403,7 +430,7 @@ def videoLoop(model, names):
 
     except RuntimeError:
         print("[INFO]Caught Runtime Error")
-    except TclError:
+    except tk.TclError:
         print("[INFO]Caught Tcl Error")
 
 
@@ -429,18 +456,18 @@ def getPage3():
 
 
 ######################################## Home Page ####################################
-Label(pages[0], text="Criminal Identification System", fg="white", bg="#202d42",
+tk.Label(pages[0], text="Criminal Identification System", fg="white", bg="#202d42",
       font="Arial 35 bold", pady=30).pack()
 
-logo = PhotoImage(file = "logo.png")
-Label(pages[0], image=logo, bg="#202d42").pack()
+logo = tk.PhotoImage(file = "logo.png")
+tk.Label(pages[0], image=logo, bg="#202d42").pack()
 
-btn_frame = Frame(pages[0], bg="#202d42", pady=30)
+btn_frame = tk.Frame(pages[0], bg="#202d42", pady=30)
 btn_frame.pack()
 
-Button(btn_frame, text="Register Criminal", command=getPage1)
-Button(btn_frame, text="Detect Criminal", command=getPage2)
-Button(btn_frame, text="Video Surveillance", command=getPage3)
+tk.Button(btn_frame, text="Register Criminal", command=getPage1)
+tk.Button(btn_frame, text="Detect Criminal", command=getPage2)
+tk.Button(btn_frame, text="Video Surveillance", command=getPage3)
 
 for btn in btn_frame.winfo_children():
     btn.configure(font="Arial 20", width=17, bg="#2196f3", fg="white",

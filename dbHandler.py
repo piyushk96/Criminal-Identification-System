@@ -15,8 +15,8 @@ def insertData(data):
     try:
         cursor.execute(query)
         db.commit()
-        print("data inserted")
         rowId = cursor.lastrowid
+        print("data stored on row %d" % rowId)
     except:
         db.rollback()
         print("Data insertion failed")
