@@ -23,8 +23,7 @@ slide_control_panel = None
 current_slide = -1
 
 root = tk.Tk()
-# root.configure(background = '#202d42')
-root.geometry("1500x900")
+root.geometry("1500x900+200+100")
 
 # create Pages
 pages = []
@@ -172,14 +171,14 @@ def register(entries, required, menu_var):
 
     # Fetching data from entries
     entry_data = {}
-    for i in range(len(entries)):
-        val = entries[i][1].get()
+    for i, entry in enumerate(entries):
+        val = entry[1].get()
 
         if (len(val) == 0 and required[i] == 1):
-            messagebox.showerror("Field Error", "Required field missing :\n\n%s" % (entries[i][0]))
+            messagebox.showerror("Field Error", "Required field missing :\n\n%s" % (entry[0]))
             return
         else:
-            entry_data[entries[i][0]] = val
+            entry_data[entry[0]] = val.lower()
 
 
     # Setting Directory
@@ -188,9 +187,9 @@ def register(entries, required, menu_var):
         os.mkdir(path)
 
     no_face = []
-    for i in range(len(img_list)):
+    for i, img in enumerate(img_list):
         # Storing Images in directory
-        id = registerCriminal(img_list[i], path, i + 1)
+        id = registerCriminal(img, path, i + 1)
         if(id != None):
             no_face.append(id)
 
@@ -246,9 +245,6 @@ def getPage1():
     tk.Button(btn_grid, text="Select Images", command=lambda: selectMultiImage(opt_menu, menu_var), font="Arial 15 bold", bg="#2196f3",
            fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").grid(row=0, column=0, padx=25, pady=25)
-    # Button(btn_grid, text="Start Camera", command=, font="Arial 15 bold", padx=20, bg="#2196f3",
-    #        fg="white", pady=10, bd=0, highlightthickness=0, activebackground="#091428",
-    #        activeforeground="white").grid(row=0, column=1, padx=25, pady=25)
 
 
     # Creating Scrollable Frame
@@ -273,8 +269,7 @@ def getPage1():
     required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]
 
     entries = []
-    i = 0
-    for field in input_fields:
+    for i, field in enumerate(input_fields):
         row = tk.Frame(scroll_frame, bg="#202d42")
         row.pack(side="top", fill="x", pady=15)
 
@@ -300,11 +295,48 @@ def getPage1():
             menu = opt_menu.nametowidget(opt_menu.menuname)
             menu.configure(font="Arial 13", bg="white", activebackground="#90ceff", bd=0)
 
-        i += 1
-
     tk.Button(scroll_frame, text="Register", command=lambda: register(entries, required, menu_var), font="Arial 15 bold",
            bg="#2196f3", fg="white", pady=10, padx=30, bd=0, highlightthickness=0, activebackground="#091428",
            activeforeground="white").pack(pady=25)
+
+
+def showCriminalProfile(name):
+    top = tk.Toplevel(bg="#202d42")
+    top.title("Criminal Profile")
+    top.geometry("1500x900+%d+%d"%(root.winfo_x()+10, root.winfo_y()+10))
+
+    tk.Label(top, text="Criminal Profile", fg="white", bg="#202d42", font="Arial 20 bold", pady=10).pack()
+
+    content = tk.Frame(top, bg="#202d42", pady=20)
+    content.pack(expand="true", fill="both")
+    content.grid_columnconfigure(0, weight=1, uniform="group1")
+    content.grid_columnconfigure(1, weight=1, uniform="group1")
+    content.grid_rowconfigure(0, weight=1)
+
+    (id, crim_data) = retrieveData(name)
+
+    path = os.path.join("profile_pics", "criminal %d.png"%id)
+    profile_img = cv2.imread(path)
+
+    profile_img = cv2.resize(profile_img, (500, 500))
+    img = cv2.cvtColor(profile_img, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(img)
+    img = ImageTk.PhotoImage(img)
+    img_label = tk.Label(content, image=img, bg="#202d42")
+    img_label.image = img
+    img_label.grid(row=0, column=0)
+
+    info_frame = tk.Frame(content, bg="#202d42")
+    info_frame.grid(row=0, column=1, sticky='w')
+
+    for i, item in enumerate(crim_data.items()):
+        tk.Label(info_frame, text=item[0], pady=15, fg="yellow", font="Arial 15 bold", bg="#202d42").grid(row=i, column=0, sticky='w')
+        tk.Label(info_frame, text=":", fg="yellow", padx=50, font="Arial 15 bold", bg="#202d42").grid(row=i, column=1)
+        val = "---" if (item[1]=="") else item[1]
+        tk.Label(info_frame, text=val.capitalize(), fg="white", font="Arial 15", bg="#202d42").grid(row=i, column=2, sticky='w')
+
+    for wid in info_frame.winfo_children():
+        wid.configure()
 
 
 def startRecognition():
@@ -334,10 +366,11 @@ def startRecognition():
             messagebox.showerror("Error", "No criminal recognized.")
             return
 
-        for i in range(len(recognized)):
-            crims_found_labels.append(tk.Label(right_frame, text=recognized[i][0], bg="orange",
+        for i, crim in enumerate(recognized):
+            crims_found_labels.append(tk.Label(right_frame, text=crim[0], bg="orange",
                                             font="Arial 15 bold", pady=20))
             crims_found_labels[i].pack(fill="x", padx=20, pady=10)
+            crims_found_labels[i].bind("<Button-1>", lambda e, name=crim[0]:showCriminalProfile(name))
 
         img_size = left_frame.winfo_height() - 40
 
@@ -416,10 +449,11 @@ def videoLoop(model, names):
                     wid.destroy()
                 del(crims_found_labels[:])
 
-                for i in range(len(recognized)):
-                    crims_found_labels.append(tk.Label(right_frame, text=recognized[i][0], bg="orange",
+                for i, crim in enumerate(recognized):
+                    crims_found_labels.append(tk.Label(right_frame, text=crim[0], bg="orange",
                                                     font="Arial 15 bold", pady=20))
                     crims_found_labels[i].pack(fill="x", padx=20, pady=10)
+                    crims_found_labels[i].bind("<Button-1>", lambda e, name=crim[0]: showCriminalProfile(name))
 
                 old_recognized = recog_names
 
@@ -453,8 +487,6 @@ def getPage3():
     thread.start()
 
 
-
-
 ######################################## Home Page ####################################
 tk.Label(pages[0], text="Criminal Identification System", fg="white", bg="#202d42",
       font="Arial 35 bold", pady=30).pack()
@@ -478,5 +510,3 @@ for btn in btn_frame.winfo_children():
 
 pages[0].lift()
 root.mainloop()
-
-# aWidget.tk.call('tk', 'scaling', 1)

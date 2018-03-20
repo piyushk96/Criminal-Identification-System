@@ -26,3 +26,39 @@ def insertData(data):
     print("connection closed")
     return rowId
 
+def retrieveData(name):
+    id = None
+    crim_data = None
+
+    db = pymysql.connect("localhost", "criminaluser", "", "criminaldb")
+    cursor = db.cursor()
+    print("database connected")
+
+    query = "SELECT * FROM criminaldata WHERE name='%s'"%name
+
+    try:
+        cursor.execute(query)
+        result = cursor.fetchone()
+
+        id=result[0]
+        crim_data = {
+            "Name" : result[1],
+            "Father's Name" : result[2],
+            "Mother's Name" : result[3],
+            "Gender" : result[4],
+            "DOB(yyyy-mm-dd)" : result[5],
+            "Blood Group" : result[6],
+            "Identification Mark" : result[7],
+            "Nationality" : result[8],
+            "Mother Tongue" : result[9],
+            "Crimes Done" : result[10]
+        }
+
+        print("data retrieved")
+    except:
+        print("Error: Unable to fetch data")
+
+    db.close()
+    print("connection closed")
+
+    return (id, crim_data)
