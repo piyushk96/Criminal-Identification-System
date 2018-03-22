@@ -10,7 +10,7 @@ def insertData(data):
     query = "INSERT INTO criminaldata VALUES(0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % \
             (data["Name"], data["Father's Name"], data["Mother's Name"], data["Gender"],
              data["DOB(yyyy-mm-dd)"], data["Blood Group"], data["Identification Mark"],
-             data["Nationality"], data["Mother Tongue"], data["Crimes Done"])
+             data["Nationality"], data["Religion"], data["Crimes Done"])
 
     try:
         cursor.execute(query)
@@ -50,7 +50,7 @@ def retrieveData(name):
             "Blood Group" : result[6],
             "Identification Mark" : result[7],
             "Nationality" : result[8],
-            "Mother Tongue" : result[9],
+            "Religion" : result[9],
             "Crimes Done" : result[10]
         }
 

@@ -207,7 +207,7 @@ def register(entries, required, menu_var):
 
         if(rowId > 0):
             messagebox.showinfo("Success", "Criminal Registered Successfully.")
-            os.rename(path, os.path.join('face_samples', entry_data["Name"]))
+            shutil.move(path, os.path.join('face_samples', entry_data["Name"]))
 
             # save profile pic
             profile_img_num = int(menu_var.get().split(' ')[1]) - 1
@@ -264,9 +264,9 @@ def getPage1():
     tk.Label(scroll_frame, text="* Required Fields", bg="#202d42", fg="yellow", font="Arial 13 bold").pack()
     # Adding Input Fields
     input_fields = ("Name", "Father's Name", "Mother's Name", "Gender", "DOB(yyyy-mm-dd)", "Blood Group",
-                    "Identification Mark", "Nationality", "Mother Tongue", "Crimes Done", "Profile Image")
+                    "Identification Mark", "Nationality", "Religion", "Crimes Done", "Profile Image")
     ip_len = len(input_fields)
-    required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]
+    required = [1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0]
 
     entries = []
     for i, field in enumerate(input_fields):
@@ -309,8 +309,8 @@ def showCriminalProfile(name):
 
     content = tk.Frame(top, bg="#202d42", pady=20)
     content.pack(expand="true", fill="both")
-    content.grid_columnconfigure(0, weight=1, uniform="group1")
-    content.grid_columnconfigure(1, weight=1, uniform="group1")
+    content.grid_columnconfigure(0, weight=3, uniform="group1")
+    content.grid_columnconfigure(1, weight=5, uniform="group1")
     content.grid_rowconfigure(0, weight=1)
 
     (id, crim_data) = retrieveData(name)
@@ -334,9 +334,6 @@ def showCriminalProfile(name):
         tk.Label(info_frame, text=":", fg="yellow", padx=50, font="Arial 15 bold", bg="#202d42").grid(row=i, column=1)
         val = "---" if (item[1]=="") else item[1]
         tk.Label(info_frame, text=val.capitalize(), fg="white", font="Arial 15", bg="#202d42").grid(row=i, column=2, sticky='w')
-
-    for wid in info_frame.winfo_children():
-        wid.configure()
 
 
 def startRecognition():

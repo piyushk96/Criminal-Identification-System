@@ -8,5 +8,5 @@ dob varchar(10),
 `blood group` varchar(5),
 `identity mark` varchar(30) not null,
 nationality varchar(15) not null,
-`mother tongue` varchar(15) not null,
+`religion` varchar(15) not null,
 `crimes` text not null);
