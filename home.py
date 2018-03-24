@@ -359,6 +359,10 @@ def startRecognition():
         print('Training Successful. Detecting Faces')
         (frame, recognized) = recognize_face(model, frame, gray_frame, face_coords, names)
 
+        img_size = left_frame.winfo_height() - 40
+        frame = cv2.flip(frame, 1, 0)
+        showImage(frame, img_size)
+
         if (len(recognized) == 0):
             messagebox.showerror("Error", "No criminal recognized.")
             return
@@ -368,11 +372,6 @@ def startRecognition():
                                             font="Arial 15 bold", pady=20))
             crims_found_labels[i].pack(fill="x", padx=20, pady=10)
             crims_found_labels[i].bind("<Button-1>", lambda e, name=crim[0]:showCriminalProfile(name))
-
-        img_size = left_frame.winfo_height() - 40
-
-        frame = cv2.flip(frame, 1, 0)
-        showImage(frame, img_size)
 
 
 def selectImage():
