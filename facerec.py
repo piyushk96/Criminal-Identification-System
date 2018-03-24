@@ -1,7 +1,7 @@
 # facerec.py
 import cv2, numpy, os
 
-size = 1
+size = 2
 haar_cascade = cv2.CascadeClassifier('face_cascade.xml')
 
 # Part 1: Create fisherRecognizer
